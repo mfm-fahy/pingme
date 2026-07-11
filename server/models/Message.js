@@ -16,6 +16,11 @@ const messageSchema = new mongoose.Schema({
     required: true,
     maxlength: 5000,
   },
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
+  },
   read: {
     type: Boolean,
     default: false,

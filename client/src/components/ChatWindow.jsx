@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const SWIPE_THRESHOLD = 80;
 
 export default function ChatWindow({ selectedUser, onBack }) {
   const { user, token } = useAuth();
@@ -11,9 +12,13 @@ export default function ChatWindow({ selectedUser, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const [swipingId, setSwipingId] = useState(null);
+  const [swipeX, setSwipeX] = useState(0);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const containerRef = useRef(null);
+  const touchStartRef = useRef({ x: 0, y: 0, id: null });
 
   const isOnline = onlineUserIds.has(selectedUser._id);
   const isTyping = typingUsers[selectedUser._id];
@@ -82,8 +87,9 @@ export default function ChatWindow({ selectedUser, onBack }) {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
-    sendMessage(selectedUser._id, text);
+    sendMessage(selectedUser._id, text, replyTo?._id || null);
     setInput('');
+    setReplyTo(null);
     sendStopTyping(selectedUser._id);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
   };
@@ -103,6 +109,62 @@ export default function ChatWindow({ selectedUser, onBack }) {
       handleSend(e);
     }
   };
+
+  const cancelReply = () => setReplyTo(null);
+
+  // Swipe-to-reply handlers
+  const handleTouchStart = useCallback((e, msg) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, id: msg._id };
+    setSwipingId(null);
+    setSwipeX(0);
+  }, []);
+
+  const handleTouchMove = useCallback((e, msg) => {
+    if (!touchStartRef.current.id) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+
+    // If vertical scroll is dominant, cancel swipe
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 20) return;
+
+    if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
+      e.preventDefault();
+      const clampedX = Math.min(dx, 160);
+      setSwipingId(msg._id);
+      setSwipeX(clampedX);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e, msg) => {
+    if (swipeX > SWIPE_THRESHOLD && swipingId === msg._id) {
+      setReplyTo(msg);
+    }
+    setSwipingId(null);
+    setSwipeX(0);
+    touchStartRef.current = { x: 0, y: 0, id: null };
+  }, [swipeX, swipingId]);
+
+  // Long press handler (for devices without swipe)
+  const longPressTimer = useRef(null);
+  const handleLongPressStart = useCallback((msg) => {
+    longPressTimer.current = setTimeout(() => {
+      setReplyTo(msg);
+    }, 500);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  }, []);
+
+  // Desktop: right-click reply
+  const handleContextMenu = useCallback((e, msg) => {
+    e.preventDefault();
+    setReplyTo(msg);
+  }, []);
 
   const groupMessagesByDate = (msgs) => {
     const groups = [];
@@ -179,9 +241,40 @@ export default function ChatWindow({ selectedUser, onBack }) {
             }
             const msg = item.message;
             const isMine = msg.sender._id === user._id;
+            const isSwiping = swipingId === msg._id;
+            const replyData = msg.replyTo;
+
             return (
-              <div key={msg._id} className={`message ${isMine ? 'sent' : 'received'}`}>
-                <div className="message-bubble">
+              <div
+                key={msg._id}
+                className={`message ${isMine ? 'sent' : 'received'}`}
+              >
+                <div
+                  className={`message-bubble ${isSwiping ? 'swiping' : ''}`}
+                  style={isSwiping ? { transform: `translateX(${swipeX}px)`, transition: 'none' } : {}}
+                  onTouchStart={(e) => handleTouchStart(e, msg)}
+                  onTouchMove={(e) => handleTouchMove(e, msg)}
+                  onTouchEnd={(e) => handleTouchEnd(e, msg)}
+                  onMouseDown={() => handleLongPressStart(msg)}
+                  onMouseUp={handleLongPressEnd}
+                  onMouseLeave={handleLongPressEnd}
+                  onContextMenu={(e) => handleContextMenu(e, msg)}
+                >
+                  {replyData && (
+                    <div className="message-reply-quote">
+                      <div className="reply-quote-bar" />
+                      <div className="reply-quote-content">
+                        <span className="reply-quote-name">
+                          {replyData.sender?.username || 'Unknown'}
+                        </span>
+                        <span className="reply-quote-text">
+                          {replyData.text?.length > 60
+                            ? replyData.text.substring(0, 60) + '...'
+                            : replyData.text}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <p className="message-text">{msg.text}</p>
                   <div className="message-meta">
                     <span className="message-time">
@@ -205,6 +298,14 @@ export default function ChatWindow({ selectedUser, onBack }) {
                     )}
                   </div>
                 </div>
+                {isSwiping && swipeX > 30 && (
+                  <div className="swipe-reply-icon" style={{ opacity: Math.min((swipeX - 30) / 50, 1) }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 14 4 9 9 4"/>
+                      <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                    </svg>
+                  </div>
+                )}
               </div>
             );
           })
@@ -219,10 +320,34 @@ export default function ChatWindow({ selectedUser, onBack }) {
         <div ref={messagesEndRef} />
       </div>
 
+      {replyTo && (
+        <div className="reply-preview-bar">
+          <div className="reply-preview-inner">
+            <div className="reply-preview-bar-color" />
+            <div className="reply-preview-content">
+              <span className="reply-preview-name">
+                {replyTo.sender?._id === user._id ? 'You' : replyTo.sender?.username}
+              </span>
+              <span className="reply-preview-text">
+                {replyTo.text?.length > 50
+                  ? replyTo.text.substring(0, 50) + '...'
+                  : replyTo.text}
+              </span>
+            </div>
+            <button className="reply-preview-close" onClick={cancelReply}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <form className="chat-input-area" onSubmit={handleSend}>
         <input
           type="text"
-          placeholder="Type a message"
+          placeholder={replyTo ? 'Reply...' : 'Type a message'}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}

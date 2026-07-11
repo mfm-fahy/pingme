@@ -67,12 +67,17 @@ io.on('connection', async (socket) => {
         sender: socket.userId,
         receiver: data.receiverId,
         text: data.text,
+        replyTo: data.replyTo || null,
       });
       await message.save();
 
       const populated = await Message.findById(message._id)
         .populate('sender', 'username')
-        .populate('receiver', 'username');
+        .populate('receiver', 'username')
+        .populate({
+          path: 'replyTo',
+          populate: { path: 'sender', select: 'username' },
+        });
 
       // Send to sender
       socket.emit('newMessage', populated);

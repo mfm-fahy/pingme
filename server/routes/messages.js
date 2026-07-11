@@ -17,7 +17,11 @@ router.get('/:userId', auth, async (req, res) => {
       .sort({ createdAt: 1 })
       .limit(200)
       .populate('sender', 'username')
-      .populate('receiver', 'username');
+      .populate('receiver', 'username')
+      .populate({
+        path: 'replyTo',
+        populate: { path: 'sender', select: 'username' },
+      });
     res.json(messages);
   } catch (error) {
     res.status(500).json({ error: error.message });

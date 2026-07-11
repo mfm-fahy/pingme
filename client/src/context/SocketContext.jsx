@@ -73,9 +73,9 @@ export function SocketProvider({ children }) {
     };
   }, [token, user]);
 
-  const sendMessage = useCallback((receiverId, text) => {
+  const sendMessage = useCallback((receiverId, text, replyTo = null) => {
     if (socketRef.current) {
-      socketRef.current.emit('sendMessage', { receiverId, text });
+      socketRef.current.emit('sendMessage', { receiverId, text, replyTo });
     }
   }, []);
 
