@@ -131,15 +131,33 @@ export default function ChatWindow({ selectedUser, onBack }) {
           </svg>
         </button>
         <div className="chat-header-info">
-          <div className="user-avatar-header">
+          <div className={`user-avatar-header ${isOnline ? 'online-ring' : ''}`}>
             {selectedUser.username[0].toUpperCase()}
           </div>
           <div className="chat-header-text">
             <span className="chat-header-name">{selectedUser.username}</span>
             <span className={`chat-header-status ${isOnline ? 'online' : ''}`}>
-              {isTyping ? 'typing...' : isOnline ? 'Online' : 'Offline'}
+              {isTyping ? (
+                <span className="typing-text">typing...</span>
+              ) : isOnline ? (
+                <span className="status-online-text">online</span>
+              ) : (
+                `last seen ${new Date(selectedUser.lastSeen || Date.now()).toLocaleString('en-US', {
+                  hour: '2-digit', minute: '2-digit', hour12: true,
+                  month: 'short', day: 'numeric',
+                })}`
+              )}
             </span>
           </div>
+        </div>
+        <div className="chat-header-actions">
+          <button className="btn-icon" title="Info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="5" r="1"/>
+              <circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
         </div>
       </div>
 

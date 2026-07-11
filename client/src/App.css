@@ -167,6 +167,7 @@ html, body, #root {
 .chat-app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   width: 100%;
   background: var(--bg-app);
 }
@@ -518,6 +519,10 @@ html, body, #root {
   color: var(--bg-primary);
 }
 
+.chat-header-actions {
+  display: none;
+}
+
 /* Messages Area */
 .chat-messages {
   flex: 1;
@@ -707,13 +712,22 @@ html, body, #root {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chat-app {
+    height: 100dvh;
+  }
+
   .chat-sidebar {
     position: absolute;
     width: 100%;
     min-width: 100%;
     height: 100%;
     z-index: 10;
-    transition: transform 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
   }
 
   .chat-sidebar:not(.active) {
@@ -722,6 +736,7 @@ html, body, #root {
 
   .chat-main {
     width: 100%;
+    height: 100dvh;
   }
 
   .chat-main.active {
@@ -740,35 +755,231 @@ html, body, #root {
     transform: translateX(-100%);
   }
 
+  .sidebar-header {
+    padding-top: max(10px, env(safe-area-inset-top));
+    height: auto;
+    padding-bottom: 10px;
+  }
+
+  .sidebar-username {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .user-avatar-small {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+
+  .user-list-search {
+    margin: 4px 10px 4px;
+    padding: 6px 12px;
+    border-radius: 24px;
+  }
+
+  .user-item {
+    padding: 14px 16px;
+  }
+
+  .user-name {
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .user-status {
+    font-size: 13px;
+  }
+
+  .user-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .online-indicator {
+    width: 16px;
+    height: 16px;
+    border-width: 2.5px;
+  }
+
+  /* Enhanced Mobile Chat Header / Profile */
+  .chat-header {
+    padding: 8px 10px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    height: auto;
+    min-height: 56px;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .chat-header-info {
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .user-avatar-header {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+  }
+
+  .user-avatar-header.online-ring {
+    border-color: var(--bg-primary);
+  }
+
+  .chat-header-text {
+    min-width: 0;
+  }
+
+  .chat-header-name {
+    font-size: 17px;
+    font-weight: 700;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-header-status {
+    font-size: 12.5px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-header-status .typing-text {
+    color: var(--bg-primary);
+    font-style: italic;
+  }
+
+  .chat-header-status .status-online-text {
+    color: var(--bg-primary);
+  }
+
+  .chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .chat-header-actions .btn-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Mobile Messages */
   .chat-messages {
-    padding: 12px 16px;
+    padding: 8px 10px;
   }
 
   .message-bubble {
     max-width: 85%;
+    padding: 7px 10px 6px;
+  }
+
+  .message-text {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .message-time {
+    font-size: 10.5px;
+  }
+
+  /* Mobile Input Area */
+  .chat-input-area {
+    padding: 8px 10px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 8px;
+    background: var(--bg-sidebar-header);
+  }
+
+  .chat-input {
+    padding: 10px 16px;
+    font-size: 16px;
+    border-radius: 24px;
+  }
+
+  .btn-send {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chat-empty {
+    padding: 24px;
+  }
+
+  .chat-empty h2 {
+    font-size: 24px;
+  }
+
+  .chat-empty p {
+    font-size: 13px;
   }
 
   .auth-card {
     padding: 32px 24px;
   }
+
+  .unread-badge {
+    font-size: 12px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+  }
 }
 
 @media (max-width: 480px) {
   .chat-messages {
-    padding: 10px 10px;
+    padding: 6px 8px;
   }
 
   .message-bubble {
     max-width: 90%;
+    padding: 6px 9px 5px;
+  }
+
+  .message-text {
+    font-size: 14.5px;
   }
 
   .sidebar-username {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .user-avatar-small {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+  }
+
+  .user-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .user-avatar-header {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+
+/* Safe area for iPhone notch / home indicator */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .chat-input-area {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sidebar-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  .chat-header {
+    padding-top: env(safe-area-inset-top);
   }
 }
