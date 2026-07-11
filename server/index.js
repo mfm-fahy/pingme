@@ -138,6 +138,10 @@ io.on('connection', async (socket) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 
+app.get('/', (req, res) => {
+  res.json({ message: 'PingMe API is running' });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
