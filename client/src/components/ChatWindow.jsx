@@ -184,6 +184,17 @@ export default function ChatWindow({ selectedUser, onBack }) {
 
   const grouped = groupMessagesByDate(messages);
 
+  const getReplyData = (replyTo) => {
+    if (!replyTo) return null;
+    if (typeof replyTo === 'string') {
+      const found = messages.find((m) => m._id === replyTo);
+      return found || { text: 'Message', sender: { username: '' }, _id: replyTo };
+    }
+    if (replyTo.text) return replyTo;
+    const found = messages.find((m) => m._id === replyTo._id);
+    return found || { text: 'Message', sender: { username: '' }, _id: replyTo._id };
+  };
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -242,7 +253,7 @@ export default function ChatWindow({ selectedUser, onBack }) {
             const msg = item.message;
             const isMine = msg.sender._id === user._id;
             const isSwiping = swipingId === msg._id;
-            const replyData = msg.replyTo;
+            const replyData = getReplyData(msg.replyTo);
 
             return (
               <div
@@ -265,7 +276,11 @@ export default function ChatWindow({ selectedUser, onBack }) {
                       <div className="reply-quote-bar" />
                       <div className="reply-quote-content">
                         <span className="reply-quote-name">
-                          {replyData.sender?.username || 'Unknown'}
+                          {replyData.sender?._id === user._id
+                            ? 'You'
+                            : (typeof replyData.sender === 'object'
+                                ? replyData.sender.username
+                                : messages.find(m => m._id === msg.replyTo)?.sender?.username) || 'Unknown'}
                         </span>
                         <span className="reply-quote-text">
                           {replyData.text?.length > 60
@@ -326,7 +341,7 @@ export default function ChatWindow({ selectedUser, onBack }) {
             <div className="reply-preview-bar-color" />
             <div className="reply-preview-content">
               <span className="reply-preview-name">
-                {replyTo.sender?._id === user._id ? 'You' : replyTo.sender?.username}
+                {replyTo.sender?._id === user._id ? 'You' : (replyTo.sender?.username || 'Unknown')}
               </span>
               <span className="reply-preview-text">
                 {replyTo.text?.length > 50
